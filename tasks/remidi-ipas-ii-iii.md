@@ -1,0 +1,1 @@
+Mengumpulkan catatan BAB II dan III

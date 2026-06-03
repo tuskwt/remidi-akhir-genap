@@ -1,0 +1,1 @@
+MENGERJAKAN soal ujian kembali pada kertas folio

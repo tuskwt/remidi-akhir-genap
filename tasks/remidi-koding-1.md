@@ -1,0 +1,1 @@
+Mengumpulkan catatan Semester 2 LENGKAP dengan tugasnya
