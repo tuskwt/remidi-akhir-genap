@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Daftar Remidi Siswa - SMK Sukawati Sragen</title>
+
+    <!-- Tailwind CSS (with Typography Plugin for Markdown) -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- PapaParse untuk membaca CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Marked.js untuk membaca Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        pinRed: '#E60023',
+                        pinDark: '#111111',
+                        pinDarkCard: '#1E1E1E',
+                        pinGray: '#E9E9E9',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar untuk estetika */
+        ::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
+        }
+
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Animasi Bottom Sheet Mobile */
+        @media (max-width: 640px) {
+            .modal-content {
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
+                margin-bottom: 0;
+                align-self: flex-end;
+                width: 100%;
+                animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+
+        /* Animasi saat pindah kelas (Filter) agar halus dan tidak glitch */
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-slide {
+            animation: fadeSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-pinDark text-gray-900 dark:text-gray-100 font-sans min-h-screen pb-24">
+
+    <header
+        class="sticky top-0 z-40 bg-white/80 dark:bg-pinDarkCard/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3 md:px-8">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-pinRed to-red-800 flex items-center justify-center text-white shadow-sm">
+                    <i class="ph-fill ph-graduation-cap text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-[17px] leading-tight">Daftar Remidi Siswa</h1>
+                    <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400">SMK Sukawati Sragen</p>
+                </div>
+            </div>
+
+            <button id="themeToggle"
+                class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 focus:outline-none">
+                <i class="ph-fill ph-moon text-xl dark:hidden text-gray-600"></i>
+                <i class="ph-fill ph-sun text-xl hidden dark:block text-yellow-400"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 md:px-8 mt-5">
+
+        <div
+            class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded-2xl p-3 mb-6 flex items-start gap-3 shadow-sm">
+            <div class="mt-0.5 text-blue-600 dark:text-blue-400">
+                <i class="ph-fill ph-info text-xl"></i>
+            </div>
+            <div>
+                <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-0.5">Informasi</h4>
+                <p class="text-xs text-blue-700 dark:text-blue-400/80 leading-relaxed">
+                    Status Perubahan data terbaru akan di-update secara bertahap setiap mulai pukul <b>7 malam
+                        (19:00 WIB) ke atas</b>.
+                </p>
+            </div>
+        </div>
+
+        <div class="mb-6 flex flex-col sm:flex-row gap-3">
+            <!-- Search Bar -->
+            <div class="relative flex-1">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="ph ph-magnifying-glass text-gray-400 text-lg"></i>
+                </div>
+                <input type="text" id="searchInput"
+                    class="w-full pl-11 pr-4 py-3 bg-white dark:bg-pinDarkCard border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pinRed/50 dark:focus:ring-red-900 shadow-sm text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                    placeholder="Cari nama siswa...">
+            </div>
+
+            <!-- Dropdown Filter Kelas -->
+            <div class="relative min-w-[140px] sm:max-w-[200px]">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="ph ph-funnel text-gray-400 text-lg"></i>
+                </div>
+                <select id="classFilter"
+                    class="w-full pl-10 pr-10 py-3 bg-white dark:bg-pinDarkCard border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pinRed/50 dark:focus:ring-red-900 shadow-sm text-gray-700 dark:text-gray-200 appearance-none cursor-pointer">
+                    <option value="all">Semua Kelas</option>
+                    <!-- Options akan digenerate via JS -->
+                </select>
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <i class="ph ph-caret-down text-gray-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <div id="studentGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+            <!-- Kartu siswa akan di-render di sini oleh JavaScript -->
+        </div>
+
+    </main>
+
+    <div id="taskModal" class="fixed inset-0 z-50 hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-[2px] transition-opacity" onclick="closeModal()"></div>
+
+        <!-- Modal Content -->
+        <div class="absolute inset-0 flex items-center justify-center p-0 sm:p-4 pointer-events-none">
+            <div
+                class="modal-content pointer-events-auto bg-white dark:bg-pinDarkCard w-full max-w-lg rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 relative flex flex-col max-h-[85vh]">
+
+                <!-- Handle (Mobile) -->
+                <div class="w-12 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mb-6 sm:hidden flex-shrink-0">
+                </div>
+
+                <!-- Close Button (Desktop) -->
+                <button onclick="closeModal()"
+                    class="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 hidden sm:flex">
+                    <i class="ph-bold ph-x text-sm text-gray-600 dark:text-gray-400"></i>
+                </button>
+
+                <!-- Header Modal -->
+                <div class="mb-5 flex-shrink-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span id="modalClass"
+                            class="text-[11px] font-bold px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 uppercase tracking-wider"></span>
+                        <span id="modalStatusBadge" class="text-[11px] font-bold px-2 py-1 rounded-md"></span>
+                    </div>
+                    <h2 id="modalName" class="text-2xl font-bold text-gray-900 dark:text-white mb-1"></h2>
+                </div>
+
+                <!-- Isi Tugas (Scrollable) -->
+                <div class="overflow-y-auto hide-scroll flex-1 -mx-2 px-2" id="modalScrollArea">
+                    
+                    <!-- View 1: List Mapel -->
+                    <div id="modalSubjectList" class="flex flex-col gap-3 pb-2">
+                        <!-- Render subject list here -->
+                    </div>
+
+                    <!-- View 2: Task Markdown -->
+                    <div id="modalTaskView" class="hidden flex-col h-full">
+                        <button onclick="backToSubjects()" class="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                            <i class="ph-bold ph-arrow-left text-lg"></i> Kembali ke Daftar Mapel
+                        </button>
+                        <div class="bg-blue-50/50 dark:bg-gray-800/50 border border-blue-100/50 dark:border-gray-700/50 p-5 rounded-2xl flex-1">
+                            <div id="modalTaskContent"
+                                class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 prose-headings:text-gray-900 dark:prose-headings:text-white prose-p:leading-relaxed prose-li:my-1 prose-a:text-blue-600 dark:prose-a:text-blue-400">
+                                <!-- Konten Markdown -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Modal -->
+                <div class="mt-6 pt-2 flex-shrink-0">
+                    <button onclick="closeModal()"
+                        class="w-full bg-gray-900 hover:bg-black dark:bg-gray-100 dark:hover:bg-white text-white dark:text-gray-900 font-bold py-3.5 rounded-full text-sm">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State & DOM Elements
+        let students = [];
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let savedBodyScrollTop = 0;
+        let savedModalScrollTop = 0;
+
+        const grid = document.getElementById('studentGrid');
+        const classFilter = document.getElementById('classFilter');
+        const searchInput = document.getElementById('searchInput');
+        const taskModal = document.getElementById('taskModal');
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const html = document.documentElement;
+
+        // Dark Mode Initialization
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+        } else {
+            html.classList.remove('dark');
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+        });
+
+        function renderStudents() {
+            grid.innerHTML = '';
+
+            // Filter Data (Search + Tab Kelas)
+            const filtered = students.filter(s => {
+                const matchFilter = currentFilter === 'all' || s.class === currentFilter;
+                const matchSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    s.class.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchFilter && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-12 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
+                        <i class="ph ph-magnifying-glass-minus text-5xl mb-3"></i>
+                        <p class="text-sm font-medium">Siswa tidak ditemukan.</p>
+                    </div>`;
+                return;
+            }
+
+            filtered.forEach(student => {
+                // UI Murni Indikator (Read-Only) dari Data
+                let statusBadge, cardClass, avatarClass, btnClass, nameClass, classTextClass;
+
+                if (student.isAllDone) {
+                    // Tampilan jika SUDAH SELESAI atau TIDAK ADA REMIDI
+                    cardClass = 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700/50 shadow-sm';
+                    statusBadge = `
+                        <div class="flex items-center gap-1.5 bg-green-500 text-white px-3 py-1.5 rounded-full shadow-sm">
+                            <i class="ph-bold ph-check text-base"></i>
+                            <span class="text-[11px] font-bold tracking-wide">${student.tasks.length === 0 ? 'TUNTAS' : 'SELESAI'}</span>
+                        </div>
+                    `;
+                    avatarClass = 'bg-green-200 dark:bg-green-800/60 text-green-800 dark:text-green-100';
+                    btnClass = 'bg-green-100 hover:bg-green-200 dark:bg-green-800/40 dark:hover:bg-green-800/60 text-green-800 dark:text-green-100 border-green-200 dark:border-green-700/50';
+                    nameClass = 'text-green-900 dark:text-green-50';
+                    classTextClass = 'text-green-600 dark:text-green-400';
+                } else {
+                    // Tampilan jika BELUM SELESAI
+                    cardClass = 'bg-white dark:bg-pinDarkCard border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700';
+                    statusBadge = `
+                        <div class="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
+                            <i class="ph-fill ph-clock text-base"></i>
+                            <span class="text-[11px] font-bold tracking-wide">REMIDI</span>
+                        </div>
+                    `;
+                    avatarClass = 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300';
+                    btnClass = 'bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200/60 dark:border-gray-700/50';
+                    nameClass = 'text-gray-900 dark:text-white';
+                    classTextClass = 'text-gray-500 dark:text-gray-400';
+                }
+
+                const card = document.createElement('div');
+                /* Tambahkan animasi animate-fade-slide ke dalam kartu */
+                card.className = `animate-fade-slide rounded-[24px] p-5 border flex flex-col h-full relative overflow-hidden ${cardClass}`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-5 gap-3">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-base leading-tight break-words ${nameClass}">${student.name}</h3>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 ${classTextClass}">${student.class}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Indikator Status (Bukan Tombol) -->
+                        <div class="flex-shrink-0">
+                            ${statusBadge}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-auto pt-2">
+                        <button onclick="openModal(${student.id})" class="w-full flex items-center justify-center gap-2 font-semibold py-2.5 px-4 rounded-xl text-[13px] border ${btnClass}">
+                            <i class="ph ph-list-dashes text-lg"></i>
+                            Lihat Mapel Remidi
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderStudents();
+        });
+
+        classFilter.addEventListener('change', (e) => {
+            currentFilter = e.target.value;
+            // Update URL hash agar mudah di-share (spasi diganti strip)
+            if (currentFilter === 'all') {
+                history.replaceState(null, null, window.location.pathname + window.location.search);
+            } else {
+                window.location.hash = currentFilter.replace(/ /g, '-');
+            }
+            renderStudents();
+        });
+
+        function openModal(id) {
+            const student = students.find(s => s.id === id);
+            if (!student) return;
+
+            document.getElementById('modalName').textContent = student.name;
+            document.getElementById('modalClass').textContent = student.class;
+
+            // Set modal badge status
+            const modalBadge = document.getElementById('modalStatusBadge');
+            if (student.isAllDone) {
+                modalBadge.textContent = student.tasks.length === 0 ? 'Tuntas' : 'Selesai';
+                modalBadge.className = 'text-[11px] font-bold px-2 py-1 rounded-md bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 uppercase tracking-wider';
+            } else {
+                modalBadge.textContent = 'Remidi';
+                modalBadge.className = 'text-[11px] font-bold px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wider';
+            }
+
+            renderSubjectList(student);
+
+            document.getElementById('modalSubjectList').classList.remove('hidden');
+            document.getElementById('modalTaskView').classList.add('hidden');
+            document.getElementById('modalTaskView').classList.remove('flex');
+
+            // Simpan posisi scroll halaman utama agar tidak loncat ke atas
+            savedBodyScrollTop = window.scrollY;
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${savedBodyScrollTop}px`;
+            document.body.style.width = '100%';
+
+            taskModal.classList.remove('hidden');
+            document.body.classList.add('modal-open');
+        }
+
+        function renderSubjectList(student) {
+            const listDiv = document.getElementById('modalSubjectList');
+            
+            if (student.tasks.length === 0) {
+                listDiv.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-10 text-center">
+                        <div class="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
+                            <i class="ph-fill ph-confetti text-4xl text-green-500"></i>
+                        </div>
+                        <h3 class="font-bold text-xl text-gray-900 dark:text-white mb-2">Yeay! Tidak ada remidi!</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Siswa ini telah menuntaskan semua mata pelajaran.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<p class="text-sm text-gray-600 dark:text-gray-400 mb-2 font-medium">Daftar Mata Pelajaran Remidi:</p>';
+            
+            student.tasks.forEach(task => {
+                const statusColor = task.isDone 
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+                const statusIcon = task.isDone ? 'ph-check-circle' : 'ph-clock';
+                
+                html += `
+                    <div class="bg-white dark:bg-pinDarkCard border border-gray-200 dark:border-gray-700 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div>
+                            <h4 class="font-bold text-gray-900 dark:text-white text-base">${task.mapel}</h4>
+                            <div class="flex items-center gap-2 mt-1.5">
+                                <span class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${statusColor}">
+                                    <i class="ph-fill ${statusIcon}"></i> ${task.statusText}
+                                </span>
+                            </div>
+                        </div>
+                        <button onclick="viewTask('${task.taskCode}', '${task.mapel}')" class="flex-shrink-0 w-full sm:w-auto bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 hover:dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 font-semibold py-2 px-4 rounded-xl text-sm transition-colors">
+                            Lihat Tugas
+                        </button>
+                    </div>
+                `;
+            });
+            
+            listDiv.innerHTML = html;
+        }
+
+        function viewTask(taskCode, mapelName) {
+            // Simpan posisi scroll daftar mapel
+            savedModalScrollTop = document.getElementById('modalScrollArea').scrollTop;
+            
+            document.getElementById('modalSubjectList').classList.add('hidden');
+            const taskView = document.getElementById('modalTaskView');
+            taskView.classList.remove('hidden');
+            taskView.classList.add('flex');
+            
+            const contentDiv = document.getElementById('modalTaskContent');
+            contentDiv.innerHTML = `<div class="flex items-center gap-2 text-gray-500 py-8 justify-center"><i class="ph ph-spinner-gap animate-spin text-2xl"></i> Memuat tugas ${mapelName}...</div>`;
+
+            fetch(`tasks/${taskCode}.md?t=${new Date().getTime()}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('File tugas tidak ditemukan');
+                    return response.text();
+                })
+                .then(text => {
+                    contentDiv.innerHTML = marked.parse(text);
+                    // Scroll to top of the modal task view
+                    document.getElementById('modalScrollArea').scrollTop = 0;
+                })
+                .catch(err => {
+                    contentDiv.innerHTML = `
+                        <div class="py-8 flex flex-col items-center text-center">
+                            <i class="ph-fill ph-warning-circle text-4xl text-red-500 mb-3"></i>
+                            <h4 class="font-bold text-gray-900 dark:text-white mb-1">Tugas tidak ditemukan</h4>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">File <code class="bg-gray-100 dark:bg-gray-800 px-1 rounded">${taskCode}.md</code> tidak ditemukan di folder tasks.</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function backToSubjects() {
+            document.getElementById('modalSubjectList').classList.remove('hidden');
+            const taskView = document.getElementById('modalTaskView');
+            taskView.classList.add('hidden');
+            taskView.classList.remove('flex');
+            
+            // Kembalikan posisi scroll daftar mapel
+            document.getElementById('modalScrollArea').scrollTop = savedModalScrollTop;
+        }
+
+        function closeModal() {
+            taskModal.classList.add('hidden');
+            document.body.classList.remove('modal-open');
+            
+            // Kembalikan posisi scroll halaman utama
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            window.scrollTo(0, savedBodyScrollTop);
+        }
+
+        function loadData() {
+            // Tampilkan loading skeleton atau pesan jika perlu
+            grid.innerHTML = `<div class="col-span-full py-12 flex justify-center text-gray-500">Memuat...</div>`;
+
+            // === PENGATURAN DATABASE GOOGLE SHEETS ===
+            // Menggunakan Spreadsheet ID dari link "bagikan (restricted ke public)"
+            const sheetId = "1hbe9-Zea_PLopI8hht1CM3efdG7QL39xgOJQTQgdBD0"; 
+            
+            // Link untuk mengambil data secara langsung (dengan timestamp agar tidak ter-cache)
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&t=${new Date().getTime()}`;
+
+            // Jika suatu saat ingin kembali memakai CSV lokal, hapus/komen baris di atas, dan nyalakan baris di bawah ini:
+            // const csvUrl = `remidi-bahasa-inggris.csv?t=${new Date().getTime()}`;
+
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    const studentMap = new Map();
+                    let idCounter = 1;
+
+                    results.data.forEach(row => {
+                        // Mendukung format header lama dan baru
+                        const name = (row.nama_siswa || row.NAMA || '').trim();
+                        if (!name) return; // Skip baris kosong
+
+                        const studentClass = (row.kelas || row.KELAS || '-').trim();
+                        
+                        // Buat key unik untuk setiap siswa
+                        const key = name + "_" + studentClass;
+                        
+                        if (!studentMap.has(key)) {
+                            studentMap.set(key, {
+                                id: idCounter++,
+                                name: name,
+                                class: studentClass,
+                                tasks: []
+                            });
+                        }
+                        
+                        const mapel = (row.mapel_remidi || '').trim();
+                        const taskCode = (row.tugas_remidi || row.KODE_TUGAS || '').trim();
+                        const statusText = (row.status_pengerjaan || row['STATUS PENGERJAAN'] || '').toUpperCase().trim();
+                        
+                        // Kita anggap jika tidak ada mapel, berarti tidak ada remidi (atau baris kosong)
+                        if (mapel && mapel !== '-' && mapel.toLowerCase() !== 'tidak ada') {
+                            let isDone = statusText === 'SELESAI' || statusText.includes('SUDAH');
+                            studentMap.get(key).tasks.push({
+                                mapel: mapel,
+                                taskCode: taskCode,
+                                isDone: isDone,
+                                statusText: statusText || 'BELUM'
+                            });
+                        }
+                    });
+
+                    students = Array.from(studentMap.values()).map(student => {
+                        // Cek apakah semua tugas sudah selesai, atau tidak ada tugas
+                        student.isAllDone = student.tasks.length === 0 || student.tasks.every(t => t.isDone);
+                        return student;
+                    });
+                    // Populate Class Dropdown
+                    const uniqueClasses = [...new Set(students.map(s => s.class))].filter(c => c && c !== '-').sort();
+                    classFilter.innerHTML = '<option value="all">Semua Kelas</option>';
+                    uniqueClasses.forEach(c => {
+                        const option = document.createElement('option');
+                        option.value = c;
+                        option.textContent = c;
+                        classFilter.appendChild(option);
+                    });
+
+                    // Cek hash pada URL untuk filter otomatis (misal: #X-TP)
+                    let hashFilter = decodeURIComponent(window.location.hash.substring(1));
+                    if (hashFilter) {
+                        // Kembalikan tanda strip (-) menjadi spasi ( ) untuk dicocokkan dengan data
+                        hashFilter = hashFilter.replace(/-/g, ' ');
+                        if (uniqueClasses.includes(hashFilter)) {
+                            classFilter.value = hashFilter;
+                            currentFilter = hashFilter;
+                        }
+                    }
+
+                    renderStudents();
+                },
+                error: function (err) {
+                    console.error("Gagal memuat file CSV:", err);
+                    grid.innerHTML = `<div class="col-span-full py-12 flex flex-col items-center justify-center text-red-500">
+                        <i class="ph ph-warning-circle text-5xl mb-3"></i>
+                        <p class="text-sm font-medium">Gagal memuat data CSV. Jika dijalankan lokal tanpa server, bisa jadi karena batasan CORS browser.</p>
+                    </div>`;
+                }
+            });
+        }
+
+        // Jalankan Load Data Pertama Kali
+        loadData();
+    </script>
+</body>
+
+</html>
