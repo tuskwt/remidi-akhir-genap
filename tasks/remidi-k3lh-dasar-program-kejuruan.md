@@ -1,11 +1,15 @@
-silahkan kerjakan soal yang saya kirim di bawah ini.
+# Remidiasi K3LH
 
-link soal: ---
+Silakan kerjakan soal pada tautan berikut:
 
-1.Dikerjakan di kertas folio bergaris
-2.Soal tidak perlu di tulis
-3.Jangan lupa di beri identitas
+📄 **[Download Soal Remidiasi K3LH](https://tuskwt.github.io/remidi-akhir-genap/Soal/soal%20remidiasi%20k3lh.pdf)**
 
-REMIDI DIKUMPULKAN PALING LAMBAT HARI RABU, 03 JUNI 2026
+## Ketentuan
 
-nb. yg tidak menggumpulkan remidiasi tidak dapat nilai mapel K3lh
+1. Dikerjakan di kertas folio bergaris.
+2. Soal tidak perlu ditulis ulang.
+3. Jangan lupa mencantumkan identitas.
+
+## Pengumpulan
+
+> **Catatan:** Siswa yang tidak mengumpulkan remidiasi tidak akan memperoleh nilai mata pelajaran K3LH.

@@ -1,3 +1,10 @@
-Kerjakan soal yang saya kirim dibawah ini.
-[LINK]
-Dikumpulkan di meja Bu Ika paling lambat hari JUM'AT tanggal 05 JUNI 2026 pukul 09.00 WIB.
+# Remidi Seni Budaya Kelas X
+
+Kerjakan soal pada tautan berikut:
+
+📄 **[Download Soal Remidi Seni Budaya Kelas X](https://tuskwt.github.io/remidi-akhir-genap/Soal/SOAL%20REMIDI%20SENI%20BUDAYA%20KELAS%20X.pdf)**
+
+## Pengumpulan
+
+* Dikumpulkan di meja **Bu Ika**.
+* Batas pengumpulan: **Jum'at, 05 Juni 2026 pukul 09.00 WIB**.
