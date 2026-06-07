@@ -147,18 +147,36 @@
                     placeholder="Cari nama siswa...">
             </div>
 
-            <!-- Dropdown Filter Kelas -->
-            <div class="relative min-w-[140px] sm:max-w-[200px]">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <i class="ph ph-funnel text-gray-400 text-lg"></i>
+            <div class="flex gap-3">
+                <!-- Dropdown Filter Status -->
+                <div class="relative min-w-[130px] flex-1 sm:flex-none sm:w-[150px]">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="ph ph-check-circle text-gray-400 text-lg"></i>
+                    </div>
+                    <select id="statusFilter"
+                        class="w-full pl-10 pr-10 py-3 bg-white dark:bg-pinDarkCard border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pinRed/50 dark:focus:ring-red-900 shadow-sm text-gray-700 dark:text-gray-200 appearance-none cursor-pointer">
+                        <option value="all">Semua Status</option>
+                        <option value="belum">Belum Selesai</option>
+                        <option value="sudah">Selesai/Tuntas</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <i class="ph ph-caret-down text-gray-400"></i>
+                    </div>
                 </div>
-                <select id="classFilter"
-                    class="w-full pl-10 pr-10 py-3 bg-white dark:bg-pinDarkCard border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pinRed/50 dark:focus:ring-red-900 shadow-sm text-gray-700 dark:text-gray-200 appearance-none cursor-pointer">
-                    <option value="all">Semua Kelas</option>
-                    <!-- Options akan digenerate via JS -->
-                </select>
-                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <i class="ph ph-caret-down text-gray-400"></i>
+
+                <!-- Dropdown Filter Kelas -->
+                <div class="relative min-w-[120px] flex-1 sm:flex-none sm:w-[150px]">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="ph ph-funnel text-gray-400 text-lg"></i>
+                    </div>
+                    <select id="classFilter"
+                        class="w-full pl-10 pr-10 py-3 bg-white dark:bg-pinDarkCard border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pinRed/50 dark:focus:ring-red-900 shadow-sm text-gray-700 dark:text-gray-200 appearance-none cursor-pointer">
+                        <option value="all">Semua Kelas</option>
+                        <!-- Options akan digenerate via JS -->
+                    </select>
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <i class="ph ph-caret-down text-gray-400"></i>
+                    </div>
                 </div>
             </div>
         </div>
@@ -235,12 +253,14 @@
         // State & DOM Elements
         let students = [];
         let currentFilter = 'all';
+        let currentStatusFilter = 'all';
         let searchQuery = '';
         let savedBodyScrollTop = 0;
         let savedModalScrollTop = 0;
 
         const grid = document.getElementById('studentGrid');
         const classFilter = document.getElementById('classFilter');
+        const statusFilter = document.getElementById('statusFilter');
         const searchInput = document.getElementById('searchInput');
         const taskModal = document.getElementById('taskModal');
         const themeToggleBtn = document.getElementById('themeToggle');
@@ -261,12 +281,23 @@
         function renderStudents() {
             grid.innerHTML = '';
 
-            // Filter Data (Search + Tab Kelas)
-            const filtered = students.filter(s => {
+            // Filter Data (Search + Tab Kelas + Status)
+            let filtered = students.filter(s => {
                 const matchFilter = currentFilter === 'all' || s.class === currentFilter;
                 const matchSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     s.class.toLowerCase().includes(searchQuery.toLowerCase());
-                return matchFilter && matchSearch;
+                const matchStatus = currentStatusFilter === 'all' || 
+                                    (currentStatusFilter === 'sudah' && s.isAllDone) || 
+                                    (currentStatusFilter === 'belum' && !s.isAllDone);
+                return matchFilter && matchSearch && matchStatus;
+            });
+
+            // Sortir otomatis: yang "Belum" muncul lebih atas, sisanya diurutkan sesuai abjad nama
+            filtered.sort((a, b) => {
+                if (a.isAllDone === b.isAllDone) {
+                    return a.name.localeCompare(b.name);
+                }
+                return a.isAllDone ? 1 : -1;
             });
 
             if (filtered.length === 0) {
@@ -340,6 +371,24 @@
             });
         }
 
+        function updateUrl() {
+            let hashClass = currentFilter === 'all' ? 'all' : currentFilter.replace(/ /g, '-');
+            let hashStatus = currentStatusFilter;
+            
+            let finalHash = '';
+            if (hashStatus !== 'all') {
+                finalHash = hashClass + '/' + hashStatus;
+            } else if (hashClass !== 'all') {
+                finalHash = hashClass;
+            }
+
+            if (finalHash) {
+                history.replaceState(null, null, '#' + finalHash);
+            } else {
+                history.replaceState(null, null, window.location.pathname + window.location.search);
+            }
+        }
+
         searchInput.addEventListener('input', (e) => {
             searchQuery = e.target.value;
             renderStudents();
@@ -347,12 +396,13 @@
 
         classFilter.addEventListener('change', (e) => {
             currentFilter = e.target.value;
-            // Update URL hash agar mudah di-share (spasi diganti strip)
-            if (currentFilter === 'all') {
-                history.replaceState(null, null, window.location.pathname + window.location.search);
-            } else {
-                window.location.hash = currentFilter.replace(/ /g, '-');
-            }
+            updateUrl();
+            renderStudents();
+        });
+
+        statusFilter.addEventListener('change', (e) => {
+            currentStatusFilter = e.target.value;
+            updateUrl();
             renderStudents();
         });
 
@@ -559,14 +609,26 @@
                         classFilter.appendChild(option);
                     });
 
-                    // Cek hash pada URL untuk filter otomatis (misal: #X-TP)
-                    let hashFilter = decodeURIComponent(window.location.hash.substring(1));
-                    if (hashFilter) {
-                        // Kembalikan tanda strip (-) menjadi spasi ( ) untuk dicocokkan dengan data
-                        hashFilter = hashFilter.replace(/-/g, ' ');
-                        if (uniqueClasses.includes(hashFilter)) {
-                            classFilter.value = hashFilter;
-                            currentFilter = hashFilter;
+                    // Cek hash pada URL untuk filter otomatis (misal: #X-TP atau #X-TP/belum)
+                    let hashString = decodeURIComponent(window.location.hash.substring(1));
+                    if (hashString) {
+                        let hashParts = hashString.split('/');
+                        let classHash = hashParts[0].replace(/-/g, ' ');
+                        
+                        if (uniqueClasses.includes(classHash)) {
+                            classFilter.value = classHash;
+                            currentFilter = classHash;
+                        } else if (classHash.toLowerCase() === 'all') {
+                            classFilter.value = 'all';
+                            currentFilter = 'all';
+                        }
+                        
+                        if (hashParts.length > 1) {
+                            let statusHash = hashParts[1].toLowerCase();
+                            if (['belum', 'sudah', 'all'].includes(statusHash)) {
+                                statusFilter.value = statusHash;
+                                currentStatusFilter = statusHash;
+                            }
                         }
                     }
 
