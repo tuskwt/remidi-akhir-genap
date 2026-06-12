@@ -7,4 +7,3 @@ Kerjakan soal pada tautan berikut:
 ## Pengumpulan
 
 * Dikumpulkan di meja **Bu Ika**.
-* Batas pengumpulan: **Jum'at, 05 Juni 2026 pukul 09.00 WIB**.
